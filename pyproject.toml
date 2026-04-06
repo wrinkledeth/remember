@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "anthropic",
-    "httpx",
-    "python-dotenv",
     "requests",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
 ]
 
 [project.scripts]

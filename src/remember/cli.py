@@ -1,7 +1,6 @@
 import argparse
-import sys
 
-from remember.core import sync
+from remember.sync import sync
 
 
 def main() -> None:
@@ -26,10 +25,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    result = sync(
+    sync(
         markdown_file=args.markdown_file,
         deck=args.deck,
         dry_run=args.dry_run,
         verbose=args.verbose,
     )
-    sys.exit(0 if result else 1)

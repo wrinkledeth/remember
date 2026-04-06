@@ -14,3 +14,6 @@ wheels/
 
 # Claude
 .claude/
+
+# My Notes
+insights.md
