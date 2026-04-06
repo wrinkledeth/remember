@@ -44,14 +44,16 @@ cards/
 In this example, I pull from `All::Tech::*` into markdown, make some edits in my markdown files, and then push back into anki.
 
 ### Pull
+
+Import an existing Anki deck into markdown. Recurses into subdecks, creating one file per deck (along with any folders).
+
+
 ```bash
 remember pull All::Tech  
 
   Wrote 65 card(s) to cards/all/tech/ableton.md
   Wrote 10 card(s) to cards/all/tech/anki.md
 ```
-- This will recurse subdecks, if they exist, and create the matching dir structure.
-- NOTE: This skips notes without Front/Back fields and notes with media!
 
 ### Status
 
@@ -109,3 +111,8 @@ Unlike 500, it implies the condition is temporary.
 "Everything in its place." Prep and organize all ingredients
 before you start cooking.
 ```
+
+## Limitations
+
+- Only supports notes with Front/Back fields (Basic and similar). Cloze, image occlusion, etc. are not supported.
+- Cards with media (`<img>`, `[sound:]`) are skipped during pull.
