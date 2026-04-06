@@ -41,8 +41,6 @@ cards/
 
 ## Usage
 
-In this example, I pull from `All::Tech::*` into markdown, edit some cards, and then push back into anki.
-
 ### Pull
 
 Import an existing Anki deck into markdown. Recurses into subdecks, creating one file per deck (along with any folders).
