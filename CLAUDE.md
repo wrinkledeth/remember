@@ -81,12 +81,21 @@ Store the insight ID (from the markdown `<!-- id: NNN -->`) in the Anki note's t
 ## CLI Interface
 
 ```
-remember <markdown_file> [--dry-run] [--verbose]
+remember [command] [--verbose]
 ```
 
-- `<markdown_file>` — path to the insights markdown file (required). Filename becomes the Anki deck name.
-- `--dry-run` — show what would happen without making changes
+- `remember` — print usage help.
+- `remember push` — push all `.md` files in `cards_dir` to Anki. Directory structure maps to Anki deck hierarchy (`cards/spanish/vocab.md` → `Spanish::Vocab`).
+- `remember status` — show card counts per deck (new, changed, orphaned, synced) without making changes.
 - `--verbose` — print detailed per-card actions
+
+### Config (`remember.toml`)
+
+Required config file, searched upward from cwd:
+
+```toml
+cards_dir = "./cards"
+```
 
 ## Testing
 

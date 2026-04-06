@@ -15,6 +15,7 @@ class AnkiNote:
     front: str
     back: str
     mod: int = 0
+    model_name: str = ""
 
 
 def _invoke(action: str, **params) -> Any:
@@ -63,6 +64,7 @@ def get_notes_info(note_ids: list[int]) -> list[AnkiNote]:
                 front=item["fields"]["Front"]["value"],
                 back=item["fields"]["Back"]["value"],
                 mod=item.get("mod", 0),
+                model_name=item.get("modelName", ""),
             )
         )
     return notes
@@ -85,6 +87,15 @@ def update_note_fields(note_id: int, front: str, back: str) -> None:
         "updateNoteFields",
         note={"id": note_id, "fields": {"Front": front, "Back": back}},
     )
+
+
+def find_notes_in_deck(deck: str) -> list[int]:
+    query = f'deck:"{deck}"'
+    return _invoke("findNotes", query=query)
+
+
+def add_tags(note_ids: list[int], tags: str) -> None:
+    _invoke("addTags", notes=note_ids, tags=tags)
 
 
 def delete_notes(note_ids: list[int]) -> None:

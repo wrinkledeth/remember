@@ -1,7 +1,7 @@
 [project]
 name = "remember"
 version = "0.1.0"
-description = "Sync life insight flashcards from markdown to Anki"
+description = "Sync flashcards from markdown to Anki"
 readme = "README.md"
 authors = [
     { name = "wrinkledeth", email = "wrinkled.eth@gmail.com" }

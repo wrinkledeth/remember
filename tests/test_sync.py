@@ -26,7 +26,7 @@ ANKI_NOTE_ORPHAN = AnkiNote(
 )
 
 
-def _run_sync(cards, existing_notes=None, input_response="n", file_mtime=5000, **kwargs):
+def _run_sync(cards, existing_notes=None, input_response="n", file_mtime=5000, verbose=False):
     """Run sync with mocked dependencies, return (result, mocks)."""
     existing = existing_notes or []
     note_ids = [n.note_id for n in existing]
@@ -43,7 +43,7 @@ def _run_sync(cards, existing_notes=None, input_response="n", file_mtime=5000, *
         patch("os.path.getmtime", return_value=file_mtime),
         patch("builtins.input", return_value=input_response),
     ):
-        result = sync("fake.md", **kwargs)
+        result = sync("fake.md", verbose=verbose)
         mocks = {
             "ensure_deck": mock_ensure,
             "add_note": mock_add,
@@ -156,24 +156,6 @@ def test_conflict_anki_newer_skip():
     mocks["write_anki_to_markdown"].assert_not_called()
 
 
-# --- dry run ---
-
-
-def test_dry_run_no_writes():
-    result, mocks = _run_sync([CARD_A, CARD_B], dry_run=True)
-    assert result.created == 2
-    mocks["add_note"].assert_not_called()
-    mocks["update_note_fields"].assert_not_called()
-
-
-def test_dry_run_with_changes():
-    result, mocks = _run_sync(
-        [CARD_B], existing_notes=[ANKI_NOTE_B_CHANGED], dry_run=True
-    )
-    assert result.updated == 1
-    mocks["update_note_fields"].assert_not_called()
-
-
 # --- error handling ---
 
 
@@ -270,33 +252,6 @@ def test_stamp_inserts_id_into_file():
         id_idx = next(i for i, l in enumerate(lines) if "<!-- id: abcdef12 -->" in l)
         sep_idx = next(i for i, l in enumerate(lines) if l.strip() == "---" and i > id_idx)
         assert sep_idx == id_idx + 1
-    finally:
-        os.unlink(path)
-
-
-def test_stamp_dry_run_does_not_modify_file():
-    md = textwrap.dedent("""\
-        # Life Insights
-
-        ## A new card without an ID
-        ---
-        This is the back.
-    """)
-    path = _write_temp_md(md)
-    try:
-        with (
-            patch("remember.sync.ensure_deck"),
-            patch("remember.sync.find_synced_notes", return_value=[]),
-            patch("remember.sync.get_notes_info", return_value=[]),
-            patch("remember.sync.add_note", return_value=1),
-        ):
-            result = sync(path, dry_run=True)
-
-        assert result.stamped == 1
-
-        with open(path, encoding="utf-8") as f:
-            updated = f.read()
-        assert "<!-- id:" not in updated
     finally:
         os.unlink(path)
 

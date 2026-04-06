@@ -28,7 +28,7 @@ class SyncResult:
     errors: list[str] = field(default_factory=list)
 
 
-def _stamp_ids(markdown_file: str, cards: list[InsightCard], dry_run: bool, verbose: bool) -> int:
+def _stamp_ids(markdown_file: str, cards: list[InsightCard], verbose: bool) -> int:
     """Insert generated IDs into the markdown file for cards missing them.
 
     Returns the number of cards stamped.
@@ -41,9 +41,6 @@ def _stamp_ids(markdown_file: str, cards: list[InsightCard], dry_run: bool, verb
     for card in unstamped:
         card.id = uuid.uuid4().hex[:8]
         _log(verbose, f"  [stamp]  {card.id}: {card.front}")
-
-    if dry_run:
-        return len(unstamped)
 
     # Build a lookup from H2 heading (first line of front) to generated ID
     headings_to_stamp = {c.front.split("\n")[0]: c.id for c in unstamped}
@@ -178,7 +175,6 @@ def _prompt_conflict(card_id: str, card_front: str, note: "AnkiNote", card: Insi
 def sync(
     markdown_file: str,
     deck: str = "Life Insights",
-    dry_run: bool = False,
     verbose: bool = False,
 ) -> SyncResult:
     cards = parse_insights(markdown_file)
@@ -189,12 +185,11 @@ def sync(
     result = SyncResult()
 
     # Stamp IDs on cards that don't have them
-    result.stamped = _stamp_ids(markdown_file, cards, dry_run, verbose)
+    result.stamped = _stamp_ids(markdown_file, cards, verbose)
     if result.stamped > 0:
-        print(f"{result.stamped} card(s) stamped with new IDs{' (dry-run)' if dry_run else ''}")
-        if not dry_run:
-            # Re-parse to get clean state from the updated file
-            cards = parse_insights(markdown_file)
+        print(f"{result.stamped} card(s) stamped with new IDs")
+        # Re-parse to get clean state from the updated file
+        cards = parse_insights(markdown_file)
 
     ensure_deck(deck)
 
@@ -207,14 +202,13 @@ def sync(
         try:
             if card.id not in anki_map:
                 _log(verbose, f"  [create] {card.id}: {card.front}")
-                if not dry_run:
-                    add_note(deck, card.front, card.back, card.id)
+                add_note(deck, card.front, card.back, card.id)
                 result.created += 1
             else:
                 note = anki_map[card.id]
                 if note.front != card.front or note.back != card.back:
                     anki_is_newer = note.mod > file_mtime
-                    if anki_is_newer and not dry_run:
+                    if anki_is_newer:
                         choice = _prompt_conflict(card.id, card.front, note, card)
                         if choice == "m":
                             _log(verbose, f"  [update] {card.id}: {card.front}")
@@ -229,8 +223,7 @@ def sync(
                             result.unchanged += 1
                     else:
                         _log(verbose, f"  [update] {card.id}: {card.front}")
-                        if not dry_run:
-                            update_note_fields(note.note_id, card.front, card.back)
+                        update_note_fields(note.note_id, card.front, card.back)
                         result.updated += 1
                 else:
                     _log(verbose, f"  [skip]   {card.id}: {card.front}")
@@ -243,7 +236,7 @@ def sync(
     orphans = [note for note in existing if note.card_id not in markdown_ids]
     result.orphaned = len(orphans)
 
-    if orphans and not dry_run:
+    if orphans:
         print(f"\n{len(orphans)} orphaned card(s) found (in Anki but not in markdown):")
         for note in orphans:
             print(f"  {note.card_id}: {note.front}")
@@ -256,13 +249,9 @@ def sync(
             delete_notes([note.note_id for note in orphans])
             result.deleted = len(orphans)
             print(f"  Deleted {result.deleted} orphaned card(s).")
-    elif orphans and dry_run:
-        for note in orphans:
-            print(f"  [orphan] {note.card_id}: {note.front}")
 
-    prefix = "[dry-run] " if dry_run else ""
     print(
-        f"{prefix}{result.created} created, {result.updated} updated, "
+        f"{result.created} created, {result.updated} updated, "
         f"{result.pulled} pulled, {result.unchanged} unchanged, "
         f"{result.orphaned} orphaned, {result.deleted} deleted, "
         f"{result.stamped} stamped"
