@@ -57,7 +57,7 @@ remember pull All::Tech
 
 ### Status
 
-Check what would change without syncing.
+After cards have been edited / added, check what would change without syncing.
 
 ```bash
 remember status --verbose
