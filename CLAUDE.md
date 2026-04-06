@@ -23,21 +23,27 @@ See `INSIGHT_FORMAT_SPEC.md` for the full spec. Summary:
 ```markdown
 # Life Insights
 
-## Card front text (H2 heading)
-<!-- id: 001 -->
-Card back text. Multiple lines/paragraphs allowed.
-Full markdown supported in the back.
+<!-- Section: Relationships -->
+
+## When she's venting about her day
+<!-- id: a3f8b2c1 -->
+and I feel the urge to jump in with solutions
+---
+Just hold space. She's not asking me to solve it.
 
 ## Next card front
-<!-- id: 002 -->
+---
 Next card back.
 ```
 
 - H1 is the document title (ignored by parser)
-- Each H2 starts a new card — heading text = front
-- First line after H2 must be `<!-- id: NNN -->`
-- Everything between the metadata comment and the next H2 = back
-- Back text should be stripped of leading/trailing whitespace
+- `##` starts a new card
+- `---` separates front from back (required)
+- Everything between `##` and `---` is the front (multi-line supported)
+- Everything between `---` and the next `##` is the back (multi-line supported)
+- `<!-- id: NNN -->` is **optional** — if missing, `remember sync` auto-generates an 8-char hex ID and writes it into the file after the `##` heading
+- All other content (HTML comments, prose outside cards) is ignored by the parser
+- Cards missing `---` are warned about and skipped
 - Filename determines the Anki deck name (`relationships.md` → "Relationships")
 
 ## AnkiConnect Integration
@@ -62,15 +68,16 @@ Store the insight ID (from the markdown `<!-- id: NNN -->`) in the Anki note's t
 ## Sync Logic (Critical)
 
 ```
-1. Parse markdown → list of InsightCards
-2. Query Anki for all notes in target deck with tag `insight-id::*`
-3. Build a map: { insight_id → anki_note_id }
-4. For each InsightCard:
+1. Parse markdown → list of InsightCards (cards without IDs get id=None)
+2. Stamp: for any card with id=None, generate 8-char hex ID, write it into the markdown file (atomic write), re-parse
+3. Query Anki for all notes in target deck with tag `insight-id::*`
+4. Build a map: { insight_id → anki_note_id }
+5. For each InsightCard:
    a. If insight_id NOT in map → addNote (create)
    b. If insight_id IN map AND content differs → updateNoteFields (update)
    c. If insight_id IN map AND content identical → skip
-5. Cards in Anki but NOT in markdown → log a warning, do NOT delete
-6. Print summary: X created, Y updated, Z unchanged, W orphaned
+6. Cards in Anki but NOT in markdown → log a warning, do NOT delete
+7. Print summary: X created, Y updated, Z unchanged, W orphaned, N stamped
 ```
 
 ## CLI Interface
@@ -102,7 +109,7 @@ remember <markdown_file> [--dry-run] [--verbose]
 - No classes where functions suffice — keep it simple
 - Descriptive variable names, minimal comments (code should be self-documenting)
 - Handle errors gracefully: if AnkiConnect is not running, say so clearly
-- If a card has malformed metadata, warn and skip it — don't crash the whole sync
+- If a card has no ID, auto-stamp it at sync time — don't require manual ID entry
 
 ## Future (Do Not Build Yet)
 

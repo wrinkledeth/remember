@@ -1,13 +1,10 @@
 # remember
 
-Sync life insight flashcards from a markdown file to Anki via spaced repetition.
+A CLI that syncs flashcards from a markdown file to [Anki](https://apps.ankiweb.net/) via [AnkiConnect](https://ankiweb.net/shared/info/2055492159).
 
-## Prerequisites
+Write cards in markdown. Run `remember`. They show up in Anki with spaced repetition — no manual card creation.
 
-- [Anki](https://apps.ankiweb.net/) with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) installed and running
-- [uv](https://docs.astral.sh/uv/)
-
-## Setup
+## Quick start
 
 ```bash
 git clone git@github.com:wrinkledeth/remember.git
@@ -15,39 +12,52 @@ cd remember
 uv sync
 ```
 
+Requires [Anki](https://apps.ankiweb.net/) running with [AnkiConnect](https://ankiweb.net/shared/info/2055492159), and [uv](https://docs.astral.sh/uv/).
+
 ## Usage
 
 ```bash
-uv run remember insights.md                        # sync to deck "Insights"
-uv run remember insights.md --dry-run --verbose     # preview changes
-uv run remember relationships.md                    # sync to deck "Relationships"
+uv run remember insights.md                     # sync to deck "Insights"
+uv run remember relationships.md                # sync to deck "Relationships"
+uv run remember insights.md --dry-run --verbose # preview without changes
 ```
 
-## Markdown Format
+The filename becomes the deck name.
 
-See [`INSIGHT_FORMAT_SPEC.md`](INSIGHT_FORMAT_SPEC.md) for the full spec.
+## Card format
 
 ```markdown
 # Life Insights
 
-## Card front text
-<!-- id: 001 -->
-Card back text. Multiple paragraphs allowed.
+<!-- Section: Relationships -->
 
-## Next card
-<!-- id: 002 -->
-Next card back.
+## When she's venting about her day
+and I feel the urge to jump in with solutions
+---
+Just hold space. She's not asking me to solve it.
+The urge to fix is about my discomfort with her discomfort.
+
+## I just got critical feedback and my chest is tight.
+---
+The ego is conflating the work with the self.
+The feedback is about the artifact, not about my worth.
 ```
 
-Each `##` heading is a card front. The metadata comment (`<!-- id: NNN -->`) must follow immediately. Everything after the metadata until the next `##` is the card back. The filename becomes the Anki deck name (`relationships.md` → "Relationships").
+`##` starts a card. `---` separates front from back. Everything else (comments, prose) is ignored. Fronts and backs can be multiple lines.
 
-## Sync Behavior
+IDs are auto-generated on first sync and written back into the file as `<!-- id: xxxxxxxx -->` comments. You never need to manage them.
 
-The markdown file is the source of truth. Anki is just the delivery mechanism. The sync is additive — it never deletes cards or resets study progress.
+See [`INSIGHT_FORMAT_SPEC.md`](INSIGHT_FORMAT_SPEC.md) for the full spec.
 
-| Scenario                      | Action                            |
-| ----------------------------- | --------------------------------- |
-| Card in markdown, not in Anki | **Create**                        |
-| Card in both, content changed | **Update** (preserves scheduling) |
-| Card in both, identical       | **Skip**                          |
-| Card in Anki, not in markdown | **Warn** (never deletes)          |
+## How sync works
+
+The markdown file is the source of truth. Anki is just the delivery mechanism.
+
+| Scenario | Action |
+|---|---|
+| New card in markdown | **Create** in Anki |
+| Card edited in markdown | **Update** in Anki (preserves scheduling) |
+| Card unchanged | **Skip** |
+| Card removed from markdown | **Warn** (never auto-deletes from Anki) |
+
+## Good Anki Card Design

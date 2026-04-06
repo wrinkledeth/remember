@@ -14,6 +14,7 @@ class AnkiNote:
     card_id: str
     front: str
     back: str
+    mod: int = 0
 
 
 def _invoke(action: str, **params) -> Any:
@@ -61,6 +62,7 @@ def get_notes_info(note_ids: list[int]) -> list[AnkiNote]:
                 card_id=card_id,
                 front=item["fields"]["Front"]["value"],
                 back=item["fields"]["Back"]["value"],
+                mod=item.get("mod", 0),
             )
         )
     return notes
@@ -83,3 +85,9 @@ def update_note_fields(note_id: int, front: str, back: str) -> None:
         "updateNoteFields",
         note={"id": note_id, "fields": {"Front": front, "Back": back}},
     )
+
+
+def delete_notes(note_ids: list[int]) -> None:
+    if not note_ids:
+        return
+    _invoke("deleteNotes", notes=note_ids)

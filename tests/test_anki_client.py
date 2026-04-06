@@ -83,6 +83,7 @@ def test_get_notes_info_parses_response(mock_post):
                     "Front": {"value": "Front text"},
                     "Back": {"value": "Back text"},
                 },
+                "mod": 1700000000,
             }
         ]
     )
@@ -93,6 +94,7 @@ def test_get_notes_info_parses_response(mock_post):
         card_id="001",
         front="Front text",
         back="Back text",
+        mod=1700000000,
     )
 
 
