@@ -33,15 +33,11 @@ The filename becomes the deck name.
 
 ## What does the HTTP 503 status code mean?
 ---
-Service Unavailable. The server is temporarily unable to handle
-the request, usually due to maintenance or overload.
-Unlike 500, it implies the condition is temporary.
+Service Unavailable. 
 
 ## What does "mise en place" mean?
 ---
-"Everything in its place." Prep and organize all ingredients
-before you start cooking. Reduces mistakes, speeds up execution,
-and keeps the workflow smooth.
+"Everything in its place."
 ```
 
 `##` starts a card. `---` separates front from back. Everything else (comments, prose) is ignored. Fronts and backs can be multiple lines.
