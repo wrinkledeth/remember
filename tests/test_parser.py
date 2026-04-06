@@ -13,7 +13,6 @@ FIXTURE = Path(__file__).parent / "fixtures" / "test_insights.md"
 
 def test_fixture_parses_valid_cards():
     cards = parse_insights(str(FIXTURE))
-    # fixture has 7 valid IDs (001-007); malformed card is skipped
     assert len(cards) == 7
 
 
@@ -36,38 +35,10 @@ def test_fixture_backs_stripped():
         assert card.back == card.back.strip()
 
 
-# --- normal card with tags ---
-
-def test_tags_parsed():
-    cards = parse_insights(str(FIXTURE))
-    card_001 = next(c for c in cards if c.id == "001")
-    assert card_001.tags == ["relationships", "mindset"]
-
-
-def test_single_tag():
-    cards = parse_insights(str(FIXTURE))
-    card_004 = next(c for c in cards if c.id == "004")
-    assert card_004.tags == ["relationships"]
-
-
 def test_front_text():
     cards = parse_insights(str(FIXTURE))
     card_001 = next(c for c in cards if c.id == "001")
     assert card_001.front == "When she's venting about her day, what am I actually being asked to do?"
-
-
-# --- card without tags ---
-
-def test_no_tags_returns_empty_list():
-    cards = parse_insights(str(FIXTURE))
-    card_006 = next(c for c in cards if c.id == "006")
-    assert card_006.tags == []
-
-
-def test_no_tags_back_parsed():
-    cards = parse_insights(str(FIXTURE))
-    card_006 = next(c for c in cards if c.id == "006")
-    assert "no tags" in card_006.back.lower()
 
 
 # --- multi-paragraph back ---
@@ -84,7 +55,7 @@ def test_multi_paragraph_back():
 def test_malformed_metadata_warns():
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        cards = parse_insights(str(FIXTURE))
+        parse_insights(str(FIXTURE))
     messages = [str(w.message) for w in caught]
     assert any("malformed" in m.lower() for m in messages)
 
@@ -135,19 +106,6 @@ def test_minimal_card():
     assert cards[0].id == "001"
     assert cards[0].front == "Minimal front"
     assert cards[0].back == "Minimal back."
-    assert cards[0].tags == []
-
-
-def test_tags_with_extra_spaces():
-    md = textwrap.dedent("""\
-        # Life Insights
-
-        ## Front
-        <!-- id: 001 | tags:  mindset ,  career  -->
-        Back.
-    """)
-    cards = _parse_inline(md)
-    assert cards[0].tags == ["mindset", "career"]
 
 
 def test_multiple_cards_correct_count():
@@ -155,11 +113,11 @@ def test_multiple_cards_correct_count():
         # Life Insights
 
         ## Card one
-        <!-- id: 001 | tags: mindset -->
+        <!-- id: 001 -->
         Back one.
 
         ## Card two
-        <!-- id: 002 | tags: career -->
+        <!-- id: 002 -->
         Back two.
 
         ## Card three
@@ -185,13 +143,7 @@ def test_missing_metadata_entirely_warns_and_skips():
 
 
 def test_dataclass_fields():
-    card = InsightCard(id="001", front="Front", back="Back", tags=["mindset"])
+    card = InsightCard(id="001", front="Front", back="Back")
     assert card.id == "001"
     assert card.front == "Front"
     assert card.back == "Back"
-    assert card.tags == ["mindset"]
-
-
-def test_dataclass_default_tags():
-    card = InsightCard(id="001", front="Front", back="Back")
-    assert card.tags == []

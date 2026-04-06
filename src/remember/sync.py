@@ -7,7 +7,6 @@ from remember.anki_client import (
     find_synced_notes,
     get_notes_info,
     update_note_fields,
-    update_tags,
 )
 from remember.parser import parse_insights
 
@@ -45,20 +44,14 @@ def sync(
             if card.id not in anki_map:
                 _log(verbose, f"  [create] {card.id}: {card.front}")
                 if not dry_run:
-                    add_note(deck, card.front, card.back, card.id, card.tags)
+                    add_note(deck, card.front, card.back, card.id)
                 result.created += 1
             else:
                 note = anki_map[card.id]
-                fields_changed = note.front != card.front or note.back != card.back
-                tags_changed = sorted(note.tags) != sorted(card.tags)
-
-                if fields_changed or tags_changed:
+                if note.front != card.front or note.back != card.back:
                     _log(verbose, f"  [update] {card.id}: {card.front}")
                     if not dry_run:
-                        if fields_changed:
-                            update_note_fields(note.note_id, card.front, card.back)
-                        if tags_changed:
-                            update_tags(note.note_id, card.id, note.tags, card.tags)
+                        update_note_fields(note.note_id, card.front, card.back)
                     result.updated += 1
                 else:
                     _log(verbose, f"  [skip]   {card.id}: {card.front}")

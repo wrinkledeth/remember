@@ -1,6 +1,6 @@
 import re
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -8,11 +8,10 @@ class InsightCard:
     id: str
     front: str
     back: str
-    tags: list[str] = field(default_factory=list)
 
 
 _METADATA_RE = re.compile(
-    r'^<!--\s*id:\s*(\S+?)(?:\s*\|\s*tags:\s*(.*?))?\s*-->$'
+    r'^<!--\s*id:\s*(\S+?)\s*-->$'
 )
 
 
@@ -46,17 +45,11 @@ def parse_insights(filepath: str) -> list[InsightCard]:
             continue
 
         card_id = match.group(1)
-        tags_raw = match.group(2)
-        tags = (
-            [t.strip() for t in tags_raw.split(',') if t.strip()]
-            if tags_raw
-            else []
-        )
 
         # Back is everything after the metadata line
         metadata_idx = next(j for j, line in enumerate(lines) if line.strip() == first_nonempty)
         back = '\n'.join(lines[metadata_idx + 1:]).strip()
 
-        cards.append(InsightCard(id=card_id, front=front, back=back, tags=tags))
+        cards.append(InsightCard(id=card_id, front=front, back=back))
 
     return cards

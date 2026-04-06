@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from remember.sync import sync
 
@@ -8,11 +9,6 @@ def main() -> None:
         description="Sync life insight flashcards from markdown to Anki"
     )
     parser.add_argument("markdown_file", help="Path to the insights markdown file")
-    parser.add_argument(
-        "--deck",
-        default="Life Insights",
-        help='Anki deck name (default: "Life Insights")',
-    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -25,9 +21,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    deck = Path(args.markdown_file).stem.replace("_", " ").replace("-", " ").title()
     sync(
         markdown_file=args.markdown_file,
-        deck=args.deck,
+        deck=deck,
         dry_run=args.dry_run,
         verbose=args.verbose,
     )

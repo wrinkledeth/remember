@@ -12,7 +12,7 @@ This tool bridges a single markdown file (the source of truth for personal life 
 - **Dependencies:** Minimal. `requests` for AnkiConnect HTTP calls. No frameworks.
 - **Entry point:** `sync.py` — CLI script, no subcommands for now. Run it, it syncs.
 - **Key modules:**
-  - `parser.py` — Parses the markdown file into a list of card objects (`id`, `front`, `back`, `tags`)
+  - `parser.py` — Parses the markdown file into a list of card objects (`id`, `front`, `back`)
   - `anki_client.py` — Thin wrapper around AnkiConnect's REST API (localhost:8765)
   - `sync.py` — Orchestrates: parse markdown → query Anki → diff → create/update
 
@@ -24,20 +24,21 @@ See `INSIGHT_FORMAT_SPEC.md` for the full spec. Summary:
 # Life Insights
 
 ## Card front text (H2 heading)
-<!-- id: 001 | tags: mindset, relationships -->
+<!-- id: 001 -->
 Card back text. Multiple lines/paragraphs allowed.
 Full markdown supported in the back.
 
 ## Next card front
-<!-- id: 002 | tags: career -->
+<!-- id: 002 -->
 Next card back.
 ```
 
 - H1 is the document title (ignored by parser)
 - Each H2 starts a new card — heading text = front
-- First line after H2 must be `<!-- id: NNN | tags: tag1, tag2 -->` (tags optional)
+- First line after H2 must be `<!-- id: NNN -->`
 - Everything between the metadata comment and the next H2 = back
 - Back text should be stripped of leading/trailing whitespace
+- Filename determines the Anki deck name (`relationships.md` → "Relationships")
 
 ## AnkiConnect Integration
 
@@ -53,8 +54,6 @@ Next card back.
 - `notesInfo` — get full note details for diffing
 - `addNote` — create new card
 - `updateNoteFields` — update front/back text without resetting scheduling
-- `addTags` / `removeTags` — sync tags if they changed
-- `changeDeck` — not used (single deck)
 
 ### ID Tracking Strategy
 
@@ -77,11 +76,10 @@ Store the insight ID (from the markdown `<!-- id: NNN -->`) in the Anki note's t
 ## CLI Interface
 
 ```
-python sync.py <markdown_file> [--deck "Life Insights"] [--dry-run] [--verbose]
+remember <markdown_file> [--dry-run] [--verbose]
 ```
 
-- `<markdown_file>` — path to the insights markdown file (required)
-- `--deck` — Anki deck name (default: "Life Insights")
+- `<markdown_file>` — path to the insights markdown file (required). Filename becomes the Anki deck name.
 - `--dry-run` — show what would happen without making changes
 - `--verbose` — print detailed per-card actions
 

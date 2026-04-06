@@ -40,14 +40,14 @@ Spaced repetition + trigger-based framing = mental rehearsal. Each review is a s
 # Life Insights
 
 ## Card front text goes here
-<!-- id: 001 | tags: mindset, relationships -->
+<!-- id: 001 -->
 Card back text goes here. Can be multiple lines and paragraphs.
 
 Supports full markdown — emphasis, lists, links, whatever helps
 the insight land.
 
 ## Next card front
-<!-- id: 002 | tags: career -->
+<!-- id: 002 -->
 Back of the next card.
 ```
 
@@ -55,24 +55,10 @@ Back of the next card.
 
 1. **`# Life Insights`** — The H1 heading at the top of the file. Required. Only one per file.
 2. **`## Card front`** — Each H2 heading starts a new card. The heading text is the card front.
-3. **`<!-- id: NNN | tags: tag1, tag2 -->`** — Metadata comment, must be the first line after the H2. 
-   - `id` is required. Zero-padded three-digit number (001, 002, ...). Must be unique across the file.
-   - `tags` is optional. Comma-separated, drawn from the taxonomy below.
+3. **`<!-- id: NNN -->`** — Metadata comment, must be the first line after the H2. `id` is required. Zero-padded three-digit number (001, 002, ...). Must be unique across the file.
 4. **Card back** — Everything after the metadata comment, up to the next `##`, is the card back.
 5. **No nested headings** — Don't use `###` or deeper inside card backs. Use bold or other formatting instead.
-
-### Tag Taxonomy
-
-- `mindset` — mental models, cognitive reframes, emotional regulation
-- `relationships` — partnership, communication, empathy, boundaries
-- `career` — work habits, leadership, feedback, professional growth
-- `health` — physical wellbeing, exercise, sleep, nutrition
-- `music` — practice, performance, creative process
-- `finance` — money decisions, investing psychology, resource allocation
-- `productivity` — systems, focus, energy management, prioritization
-- `pickleball` — technique, strategy, competition mindset
-- `spirituality` — presence, non-dual awareness, flow, surrender
-- `technical` — engineering principles, architecture, tools
+6. **Filename = deck name** — The markdown filename determines the Anki deck. `relationships.md` syncs to deck "Relationships".
 
 ---
 

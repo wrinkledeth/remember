@@ -14,7 +14,6 @@ class AnkiNote:
     card_id: str
     front: str
     back: str
-    tags: list[str]
 
 
 def _invoke(action: str, **params) -> Any:
@@ -52,28 +51,25 @@ def get_notes_info(note_ids: list[int]) -> list[AnkiNote]:
             (t.removeprefix(ID_TAG_PREFIX) for t in tags if t.startswith(ID_TAG_PREFIX)),
             "",
         )
-        user_tags = [t for t in tags if not t.startswith(ID_TAG_PREFIX)]
         notes.append(
             AnkiNote(
                 note_id=item["noteId"],
                 card_id=card_id,
                 front=item["fields"]["Front"]["value"],
                 back=item["fields"]["Back"]["value"],
-                tags=user_tags,
             )
         )
     return notes
 
 
-def add_note(deck: str, front: str, back: str, card_id: str, tags: list[str]) -> int:
-    all_tags = [f"{ID_TAG_PREFIX}{card_id}"] + tags
+def add_note(deck: str, front: str, back: str, card_id: str) -> int:
     return _invoke(
         "addNote",
         note={
             "deckName": deck,
             "modelName": "Basic",
             "fields": {"Front": front, "Back": back},
-            "tags": all_tags,
+            "tags": [f"{ID_TAG_PREFIX}{card_id}"],
         },
     )
 
@@ -85,10 +81,3 @@ def update_note_fields(note_id: int, front: str, back: str) -> None:
     )
 
 
-def update_tags(note_id: int, card_id: str, old_tags: list[str], new_tags: list[str]) -> None:
-    tags_to_remove = set(old_tags) - set(new_tags)
-    tags_to_add = set(new_tags) - set(old_tags)
-    if tags_to_remove:
-        _invoke("removeTags", notes=[note_id], tags=" ".join(tags_to_remove))
-    if tags_to_add:
-        _invoke("addTags", notes=[note_id], tags=" ".join(tags_to_add))

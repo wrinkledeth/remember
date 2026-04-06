@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock
 
 import pytest
 import requests
@@ -11,7 +11,6 @@ from remember.anki_client import (
     get_notes_info,
     add_note,
     update_note_fields,
-    update_tags,
     ANKI_CONNECT_URL,
     ANKI_CONNECT_VERSION,
 )
@@ -72,7 +71,7 @@ def test_get_notes_info_parses_response(mock_post):
     mock_post.return_value = _mock_response(result=[
         {
             "noteId": 100,
-            "tags": ["insight-id::001", "mindset", "relationships"],
+            "tags": ["insight-id::001"],
             "fields": {
                 "Front": {"value": "Front text"},
                 "Back": {"value": "Back text"},
@@ -86,7 +85,6 @@ def test_get_notes_info_parses_response(mock_post):
         card_id="001",
         front="Front text",
         back="Back text",
-        tags=["mindset", "relationships"],
     )
 
 
@@ -103,14 +101,14 @@ def test_get_notes_info_empty_list(mock_post):
 @patch("remember.anki_client.requests.post")
 def test_add_note_payload(mock_post):
     mock_post.return_value = _mock_response(result=42)
-    result = add_note("My Deck", "Q", "A", "001", ["mindset"])
+    result = add_note("My Deck", "Q", "A", "001")
     assert result == 42
     payload = mock_post.call_args[1]["json"]
     note = payload["params"]["note"]
     assert note["deckName"] == "My Deck"
     assert note["modelName"] == "Basic"
     assert note["fields"] == {"Front": "Q", "Back": "A"}
-    assert note["tags"] == ["insight-id::001", "mindset"]
+    assert note["tags"] == ["insight-id::001"]
 
 
 # --- update_note_fields ---
@@ -126,28 +124,3 @@ def test_update_note_fields_payload(mock_post):
         "id": 100,
         "fields": {"Front": "New front", "Back": "New back"},
     }
-
-
-# --- update_tags ---
-
-
-@patch("remember.anki_client.requests.post")
-def test_update_tags_adds_and_removes(mock_post):
-    mock_post.return_value = _mock_response(result=None)
-    update_tags(100, "001", old_tags=["mindset", "career"], new_tags=["mindset", "health"])
-    assert mock_post.call_count == 2
-    calls = mock_post.call_args_list
-    actions = {c[1]["json"]["action"] for c in calls}
-    assert actions == {"removeTags", "addTags"}
-
-    remove_call = next(c for c in calls if c[1]["json"]["action"] == "removeTags")
-    assert remove_call[1]["json"]["params"]["tags"] == "career"
-
-    add_call = next(c for c in calls if c[1]["json"]["action"] == "addTags")
-    assert add_call[1]["json"]["params"]["tags"] == "health"
-
-
-@patch("remember.anki_client.requests.post")
-def test_update_tags_no_change(mock_post):
-    update_tags(100, "001", old_tags=["mindset"], new_tags=["mindset"])
-    mock_post.assert_not_called()
