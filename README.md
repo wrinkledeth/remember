@@ -41,7 +41,7 @@ cards/
 
 ## Usage
 
-In this example, I pull from `All::Tech::*` into markdown, make some edits in my markdown files, and then push back into anki.
+In this example, I pull from `All::Tech::*` into markdown, make some edits to the cards, and then push back into anki.
 
 ### Pull
 
