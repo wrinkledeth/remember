@@ -16,73 +16,85 @@ git clone git@github.com:wrinkledeth/remember.git
 cd remember
 uv sync
 ```
+To run from anywhere, add the following alias:
+
+```bash
+alias remember="uv run --project /path/to/remember remember"
+```
 
 Create a `remember.toml` in your project root:
 
 ```toml
-cards_dir = "./cards"
+cards_dir = "./cards" 
 ```
 
-Then sync:
 
-```bash
-uv run remember push
-```
+Directory structure at cards_dir mirrors Anki's deck hierarchy:
 
 ```
-3 created, 0 updated, 0 pulled, 0 unchanged, 0 orphaned, 0 deleted, 3 stamped
+cards/
+  all/
+    tech/
+      ableton.md            → All::Tech::Ableton
+      anki.md               → All::Tech::Anki
 ```
 
 ## Usage
 
+In this example, I pull from `All::Tech::*` into markdown, make some edits in my markdown files, and then push back into anki.
+
+### Pull
 ```bash
-uv run remember status            # check what would change without syncing
-uv run remember push              # push all cards to Anki
-uv run remember pull "Deck Name"  # import an Anki deck into markdown
-uv run remember push --verbose    # show per-card details
+remember pull All::Tech  
+
+  Wrote 65 card(s) to cards/all/tech/ableton.md
+  Wrote 10 card(s) to cards/all/tech/anki.md
 ```
+- This will recurse subdecks, if they exist, and create the matching dir structure.
+- NOTE: This skips notes without Front/Back fields and notes with media!
 
-Directory structure maps to Anki's deck hierarchy:
+### Status
 
-```
-cards/
-  cooking.md                → Cooking
-  spanish/
-    vocab.md                → Spanish::Vocab
-    grammar.md              → Spanish::Grammar
-```
-
-### `remember pull <deck>`
-
-Imports cards from an existing Anki deck into a markdown file. Useful for bringing decks you already have into the markdown workflow.
+Check what would change without syncing.
 
 ```bash
-uv run remember pull "Spanish::Vocab"
+remember status --verbose
+
+All::Misc (all/misc.md): 12 synced
+  [changed] dc12432f: show comping (all takes)
+All::Tech::Ableton (all/tech/ableton.md): 1 changed, 1 unstamped, 64 synced
+All::Tech::Anki (all/tech/anki.md): 10 synced
 ```
 
+### Push
+
+Sync markdown cards to Anki. Creates new cards, updates changed ones, preserves scheduling.
+
+
+```bash
+remember push            
+
+--- all/tech/ableton.md → All::Tech::Ableton ---
+1 card(s) stamped with new IDs
+1 created, 1 updated, 0 pulled, 64 unchanged, 0 orphaned, 0 deleted, 1 stamped
+
+--- all/tech/anki.md → All::Tech::Anki ---
+0 created, 0 updated, 0 pulled, 10 unchanged, 0 orphaned, 0 deleted, 0 stamped
 ```
-Wrote 15 card(s) to cards/spanish/vocab.md
-15 pulled, 2 skipped (non-Basic), 1 skipped (media)
-```
+If a card was edited in both places and Anki's version is newer, you'll get an interactive prompt:
 
-- Only pulls **Basic** note types. Non-Basic (Cloze, etc.) are skipped with a warning.
-- Cards containing media (`<img`, `[sound:`) are skipped.
-- Cards already tracked by `remember` (tagged with `insight-id::`) are skipped.
-- New cards get an ID generated and tagged in Anki so future `push`es stay linked.
-- If the output file already exists, new cards are appended.
+- **`m`** — keep **m**arkdown (push to Anki)
+- **`a`** — keep **a**nki (pull into markdown)
+- **`s`** — **s**kip
 
-### `remember status`
+Cards removed from markdown are flagged as orphans — you'll be prompted before anything is deleted from Anki.
 
-Shows a summary per deck — new, changed, orphaned, and synced card counts. Use `--verbose` to see individual cards.
+##  Card format
+`##` starts a card. `---` separates front from back. Everything else is ignored. Fronts and backs can be multiple lines.
 
-```
-Cooking (cooking.md): 2 new, 5 synced
-Spanish::Vocab (spanish/vocab.md): 1 changed, 12 synced
-Spanish::Grammar (spanish/grammar.md): 8 synced
-```
+IDs are auto-generated on first sync and written back into the file as `<!-- id: xxxxxxxx -->` comments. You never need to manage them.
 
-## Card format
-
+Examples: 
 ```markdown
 ## What does the HTTP 503 status code mean?
 <!-- id: a3f8b2c1 -->
@@ -97,42 +109,3 @@ Unlike 500, it implies the condition is temporary.
 "Everything in its place." Prep and organize all ingredients
 before you start cooking.
 ```
-
-`##` starts a card. `---` separates front from back. Everything else is ignored. Fronts and backs can be multiple lines.
-
-IDs are auto-generated on first sync and written back into the file as `<!-- id: xxxxxxxx -->` comments. You never need to manage them.
-
-## How sync works
-
-The markdown file is the source of truth. Anki is the delivery mechanism.
-
-| Scenario | Action |
-|---|---|
-| New card in markdown | **Create** in Anki |
-| Card edited in markdown | **Update** in Anki (preserves scheduling) |
-| Card unchanged | **Skip** |
-| Card edited in both (Anki is newer) | **Conflict** — interactive prompt |
-| Card removed from markdown | **Orphan** — prompts to delete from Anki |
-
-### Conflicts
-
-When a card differs and the Anki note is newer than the file, `remember` shows a colored diff and asks:
-
-- **`m`** — keep **m**arkdown (push to Anki)
-- **`a`** — keep **a**nki (pull into markdown)
-- **`s`** — **s**kip
-
-## Roadmap
-
-- [x] **Multi-file / directory sync** — directory structure mirrors Anki deck hierarchy
-- [x] **`remember status`** — card counts per deck without syncing
-- [ ] **Watch mode** — `remember --watch` re-syncs on file save
-- [x] **Pull from Anki** — `remember pull <deck>` imports an Anki deck into markdown
-
-## Card design tips
-
-- **One idea per card.** Keep it direct and atomic.
-- **Front = trigger.** A question, scenario, or cue.
-- **Back = answer.** Short and direct. If you're writing a paragraph, you're explaining — not answering.
-- **No orphan backs.** If the back doesn't make sense without the front, rewrite the front.
-- **Use your own words.** Cards you write stick better than cards you copy.

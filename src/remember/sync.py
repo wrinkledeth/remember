@@ -11,6 +11,7 @@ from remember.anki_client import (
     ensure_deck,
     find_synced_notes,
     get_notes_info,
+    strip_html,
     update_note_fields,
 )
 from remember.parser import InsightCard, parse_insights
@@ -206,7 +207,7 @@ def sync(
                 result.created += 1
             else:
                 note = anki_map[card.id]
-                if note.front != card.front or note.back != card.back:
+                if strip_html(note.front) != strip_html(card.front) or strip_html(note.back) != strip_html(card.back):
                     anki_is_newer = note.mod > file_mtime
                     if anki_is_newer:
                         choice = _prompt_conflict(card.id, card.front, note, card)

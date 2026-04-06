@@ -21,6 +21,10 @@ NON_BASIC_NOTE = AnkiNote(
     note_id=3, card_id="", front="Cloze {{c1::test}}", back="",
     model_name="Cloze",
 )
+NON_BASIC_WITH_FIELDS = AnkiNote(
+    note_id=7, card_id="", front="Custom front", back="Custom back",
+    model_name="Custom Model",
+)
 MEDIA_NOTE = AnkiNote(
     note_id=4, card_id="", front="Image card", back='<img src="pic.jpg">',
     model_name="Basic",
@@ -35,15 +39,18 @@ TRACKED_NOTE = AnkiNote(
 )
 
 
-def _run_pull(notes, deck="Test Deck", verbose=False):
-    """Run pull with mocked AnkiConnect, return (result, output_path, tmpdir)."""
+def _run_pull(notes, deck="Test Deck", deck_names=None, verbose=False):
+    """Run pull with mocked AnkiConnect, return (result, cards_dir, mock_tags)."""
     tmpdir = tempfile.mkdtemp()
     cards_dir = Path(tmpdir)
     note_ids = [n.note_id for n in notes]
+    if deck_names is None:
+        deck_names = [deck]
 
     with (
-        patch("remember.pull.find_notes_in_deck", return_value=note_ids) as mock_find,
-        patch("remember.pull.get_notes_info", return_value=notes) as mock_info,
+        patch("remember.pull.get_deck_names", return_value=deck_names),
+        patch("remember.pull.find_notes_in_deck", return_value=note_ids),
+        patch("remember.pull.get_notes_info", return_value=notes),
         patch("remember.pull.add_tags") as mock_tags,
     ):
         result = pull(deck=deck, cards_dir=cards_dir, verbose=verbose)
@@ -82,10 +89,16 @@ def test_pull_generates_unique_ids():
 # --- filtering ---
 
 
-def test_skip_non_basic():
+def test_skip_non_basic_without_fields():
     result, _, _ = _run_pull([BASIC_NOTE_A, NON_BASIC_NOTE])
     assert result.pulled == 1
     assert result.skipped_non_basic == 1
+
+
+def test_pull_non_basic_with_front_and_back():
+    result, cards_dir, _ = _run_pull([NON_BASIC_WITH_FIELDS])
+    assert result.pulled == 1
+    assert result.skipped_non_basic == 0
 
 
 def test_skip_media_img():
@@ -100,14 +113,66 @@ def test_skip_media_sound():
     assert result.skipped_media == 1
 
 
-def test_skip_already_tracked():
-    result, _, _ = _run_pull([BASIC_NOTE_A, TRACKED_NOTE])
+def test_skip_already_tracked_when_file_exists():
+    """Tagged card with matching local file is skipped."""
+    tmpdir = tempfile.mkdtemp()
+    cards_dir = Path(tmpdir)
+    # Create a file that contains the tracked ID
+    md = cards_dir / "test-deck.md"
+    md.write_text("## Already tracked\n<!-- id: abc12345 -->\n---\nHas ID tag\n\n")
+
+    with (
+        patch("remember.pull.get_deck_names", return_value=["Test Deck"]),
+        patch("remember.pull.find_notes_in_deck", return_value=[1, 6]),
+        patch("remember.pull.get_notes_info", return_value=[BASIC_NOTE_A, TRACKED_NOTE]),
+        patch("remember.pull.add_tags") as mock_tags,
+    ):
+        result = pull(deck="Test Deck", cards_dir=cards_dir)
+
     assert result.pulled == 1
     assert result.already_tracked == 1
 
 
+def test_repull_tagged_card_when_file_deleted():
+    """Tagged card whose ID is NOT in any local file gets re-pulled."""
+    tmpdir = tempfile.mkdtemp()
+    cards_dir = Path(tmpdir)
+    # No local files — the file was deleted
+
+    with (
+        patch("remember.pull.get_deck_names", return_value=["Test Deck"]),
+        patch("remember.pull.find_notes_in_deck", return_value=[6]),
+        patch("remember.pull.get_notes_info", return_value=[TRACKED_NOTE]),
+        patch("remember.pull.add_tags") as mock_tags,
+    ):
+        result = pull(deck="Test Deck", cards_dir=cards_dir)
+
+    assert result.pulled == 1
+    assert result.already_tracked == 0
+    # Should reuse existing card_id, not generate a new one
+    output = cards_dir / "test-deck.md"
+    content = output.read_text()
+    assert "<!-- id: abc12345 -->" in content
+    # Should NOT re-tag since card already has the tag
+    mock_tags.assert_not_called()
+
+
 def test_all_filtered_no_file_created():
-    result, cards_dir, _ = _run_pull([NON_BASIC_NOTE, MEDIA_NOTE, TRACKED_NOTE])
+    """Cards that are all filtered out produce no file."""
+    tmpdir = tempfile.mkdtemp()
+    cards_dir = Path(tmpdir)
+    # Create file with the tracked ID so it's truly skipped
+    md = cards_dir / "existing.md"
+    md.write_text("<!-- id: abc12345 -->\n")
+
+    with (
+        patch("remember.pull.get_deck_names", return_value=["Test Deck"]),
+        patch("remember.pull.find_notes_in_deck", return_value=[3, 4, 6]),
+        patch("remember.pull.get_notes_info", return_value=[NON_BASIC_NOTE, MEDIA_NOTE, TRACKED_NOTE]),
+        patch("remember.pull.add_tags"),
+    ):
+        result = pull(deck="Test Deck", cards_dir=cards_dir)
+
     assert result.pulled == 0
     output = cards_dir / "test-deck.md"
     assert not output.exists()
@@ -123,6 +188,7 @@ def test_append_to_existing_file():
     output.write_text("# Test Deck\n\n## Existing card\n<!-- id: existing1 -->\n---\nExisting back\n\n")
 
     with (
+        patch("remember.pull.get_deck_names", return_value=["Test Deck"]),
         patch("remember.pull.find_notes_in_deck", return_value=[1]),
         patch("remember.pull.get_notes_info", return_value=[BASIC_NOTE_A]),
         patch("remember.pull.add_tags"),
@@ -134,6 +200,52 @@ def test_append_to_existing_file():
     assert "## Existing card" in content
     assert "## What is HTTP?" in content
     assert content.index("## Existing card") < content.index("## What is HTTP?")
+
+
+# --- subdeck recursion ---
+
+
+def test_pull_recurses_into_subdecks():
+    tmpdir = tempfile.mkdtemp()
+    cards_dir = Path(tmpdir)
+    all_decks = ["Tech", "Tech::Python", "Tech::Web", "Other"]
+
+    def fake_find(deck, exact=False):
+        if deck == "Tech::Python":
+            return [1]
+        if deck == "Tech::Web":
+            return [2]
+        if deck == "Tech":
+            return []
+        return []
+
+    def fake_info(note_ids):
+        if note_ids == [1]:
+            return [BASIC_NOTE_A]
+        if note_ids == [2]:
+            return [BASIC_NOTE_B]
+        return []
+
+    with (
+        patch("remember.pull.get_deck_names", return_value=all_decks),
+        patch("remember.pull.find_notes_in_deck", side_effect=fake_find),
+        patch("remember.pull.get_notes_info", side_effect=fake_info),
+        patch("remember.pull.add_tags"),
+    ):
+        result = pull(deck="Tech", cards_dir=cards_dir)
+
+    assert result.pulled == 2
+    assert (cards_dir / "tech" / "python.md").exists()
+    assert (cards_dir / "tech" / "web.md").exists()
+    assert "What is HTTP?" in (cards_dir / "tech" / "python.md").read_text()
+    assert "What is DNS?" in (cards_dir / "tech" / "web.md").read_text()
+
+
+def test_pull_no_matching_deck():
+    tmpdir = tempfile.mkdtemp()
+    with patch("remember.pull.get_deck_names", return_value=["Other"]):
+        result = pull(deck="Nonexistent", cards_dir=Path(tmpdir))
+    assert result.pulled == 0
 
 
 # --- deck name to file path ---
@@ -160,7 +272,10 @@ def test_file_path_spaces():
 
 def test_empty_deck():
     tmpdir = tempfile.mkdtemp()
-    with patch("remember.pull.find_notes_in_deck", return_value=[]):
+    with (
+        patch("remember.pull.get_deck_names", return_value=["Empty"]),
+        patch("remember.pull.find_notes_in_deck", return_value=[]),
+    ):
         result = pull(deck="Empty", cards_dir=Path(tmpdir))
     assert result.pulled == 0
 
@@ -169,7 +284,21 @@ def test_empty_deck():
 
 
 def test_verbose_shows_actions(capsys):
-    _run_pull([BASIC_NOTE_A, NON_BASIC_NOTE, TRACKED_NOTE], verbose=True)
+    """Verbose mode shows skip reasons for filtered cards."""
+    tmpdir = tempfile.mkdtemp()
+    cards_dir = Path(tmpdir)
+    # Create file with tracked ID so it's skipped
+    md = cards_dir / "test-deck.md"
+    md.write_text("<!-- id: abc12345 -->\n")
+
+    with (
+        patch("remember.pull.get_deck_names", return_value=["Test Deck"]),
+        patch("remember.pull.find_notes_in_deck", return_value=[1, 3, 6]),
+        patch("remember.pull.get_notes_info", return_value=[BASIC_NOTE_A, NON_BASIC_NOTE, TRACKED_NOTE]),
+        patch("remember.pull.add_tags"),
+    ):
+        pull(deck="Test Deck", cards_dir=cards_dir, verbose=True)
+
     captured = capsys.readouterr()
     assert "[pull]" in captured.out
     assert "[skip] non-Basic" in captured.out

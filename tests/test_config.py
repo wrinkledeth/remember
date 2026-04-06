@@ -23,6 +23,11 @@ def test_find_config_walks_up(monkeypatch, tmp_path):
 
 def test_find_config_returns_none(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
+    # Patch __file__ fallback to a path with no remember.toml
+    monkeypatch.setattr("remember.config.Path.__file__", tmp_path / "fake" / "fake" / "config.py", raising=False)
+    import remember.config
+    original = remember.config.__file__
+    monkeypatch.setattr(remember.config, "__file__", str(tmp_path / "fake" / "fake" / "config.py"))
     assert find_config() is None
 
 
@@ -36,5 +41,7 @@ def test_load_config_parses_toml(monkeypatch, tmp_path):
 
 def test_load_config_empty_when_missing(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
+    import remember.config
+    monkeypatch.setattr(remember.config, "__file__", str(tmp_path / "fake" / "fake" / "config.py"))
     config = load_config()
     assert config == {}

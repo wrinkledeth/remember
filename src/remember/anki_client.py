@@ -1,3 +1,5 @@
+import html
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,6 +8,18 @@ import requests
 ANKI_CONNECT_URL = "http://localhost:8765"
 ANKI_CONNECT_VERSION = 6
 ID_TAG_PREFIX = "insight-id::"
+
+
+def strip_html(text: str) -> str:
+    """Strip HTML tags and decode entities from Anki field content."""
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</?[a-zA-Z][^>]*>", "", text)
+    text = html.unescape(text)
+    # Normalize non-breaking spaces to regular spaces
+    text = text.replace("\xa0", " ")
+    # Strip trailing whitespace per line
+    text = "\n".join(line.rstrip() for line in text.split("\n"))
+    return text.strip()
 
 
 @dataclass
@@ -57,12 +71,15 @@ def get_notes_info(note_ids: list[int]) -> list[AnkiNote]:
             ),
             "",
         )
+        fields = item["fields"]
+        front = fields["Front"]["value"] if "Front" in fields else ""
+        back = fields["Back"]["value"] if "Back" in fields else ""
         notes.append(
             AnkiNote(
                 note_id=item["noteId"],
                 card_id=card_id,
-                front=item["fields"]["Front"]["value"],
-                back=item["fields"]["Back"]["value"],
+                front=front,
+                back=back,
                 mod=item.get("mod", 0),
                 model_name=item.get("modelName", ""),
             )
@@ -89,8 +106,15 @@ def update_note_fields(note_id: int, front: str, back: str) -> None:
     )
 
 
-def find_notes_in_deck(deck: str) -> list[int]:
-    query = f'deck:"{deck}"'
+def get_deck_names() -> list[str]:
+    return _invoke("deckNames")
+
+
+def find_notes_in_deck(deck: str, exact: bool = False) -> list[int]:
+    if exact:
+        query = f'deck:"{deck}" -deck:"{deck}::*"'
+    else:
+        query = f'deck:"{deck}"'
     return _invoke("findNotes", query=query)
 
 

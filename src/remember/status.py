@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from remember.anki_client import AnkiNote, find_synced_notes, get_notes_info
+from remember.anki_client import AnkiNote, find_synced_notes, get_notes_info, strip_html
 from remember.parser import parse_insights
 
 
@@ -54,7 +54,7 @@ def status(files: list[Path], root: Path, verbose: bool = False) -> None:
                     print(f"  {_GREEN}[new]{_RESET}     {card.id}: {card.front}")
             else:
                 note = anki_map[card.id]
-                if note.front != card.front or note.back != card.back:
+                if strip_html(note.front) != strip_html(card.front) or strip_html(note.back) != strip_html(card.back):
                     changed += 1
                     if verbose:
                         print(f"  {_YELLOW}[changed]{_RESET} {card.id}: {card.front}")
