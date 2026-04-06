@@ -11,6 +11,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "test_insights.md"
 
 # --- fixture file tests ---
 
+
 def test_fixture_parses_valid_cards():
     cards = parse_insights(str(FIXTURE))
     assert len(cards) == 7
@@ -38,10 +39,14 @@ def test_fixture_backs_stripped():
 def test_front_text():
     cards = parse_insights(str(FIXTURE))
     card_001 = next(c for c in cards if c.id == "001")
-    assert card_001.front == "When she's venting about her day, what am I actually being asked to do?"
+    assert (
+        card_001.front
+        == "When she's venting about her day, what am I actually being asked to do?"
+    )
 
 
 # --- multi-paragraph back ---
+
 
 def test_multi_paragraph_back():
     cards = parse_insights(str(FIXTURE))
@@ -51,6 +56,7 @@ def test_multi_paragraph_back():
 
 
 # --- malformed metadata ---
+
 
 def test_malformed_metadata_warns():
     with warnings.catch_warnings(record=True) as caught:
@@ -68,6 +74,7 @@ def test_malformed_metadata_card_skipped():
 
 # --- empty back ---
 
+
 def test_empty_back_card_included():
     cards = parse_insights(str(FIXTURE))
     card_007 = next((c for c in cards if c.id == "007"), None)
@@ -82,9 +89,13 @@ def test_empty_back_is_empty_string():
 
 # --- inline edge case tests ---
 
+
 def _parse_inline(md: str) -> list[InsightCard]:
     import tempfile, os
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".md", delete=False, encoding="utf-8"
+    ) as f:
         f.write(md)
         path = f.name
     try:

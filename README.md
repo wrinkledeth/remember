@@ -45,9 +45,9 @@ Each `##` heading is a card front. The metadata comment (`<!-- id: NNN -->`) mus
 
 The markdown file is the source of truth. Anki is just the delivery mechanism. The sync is additive — it never deletes cards or resets study progress.
 
-| Scenario | Action |
-|---|---|
-| Card in markdown, not in Anki | **Create** |
+| Scenario                      | Action                            |
+| ----------------------------- | --------------------------------- |
+| Card in markdown, not in Anki | **Create**                        |
 | Card in both, content changed | **Update** (preserves scheduling) |
-| Card in both, identical | **Skip** |
-| Card in Anki, not in markdown | **Warn** (never deletes) |
+| Card in both, identical       | **Skip**                          |
+| Card in Anki, not in markdown | **Warn** (never deletes)          |

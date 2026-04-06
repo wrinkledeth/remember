@@ -48,7 +48,11 @@ def get_notes_info(note_ids: list[int]) -> list[AnkiNote]:
     for item in raw:
         tags: list[str] = item["tags"]
         card_id = next(
-            (t.removeprefix(ID_TAG_PREFIX) for t in tags if t.startswith(ID_TAG_PREFIX)),
+            (
+                t.removeprefix(ID_TAG_PREFIX)
+                for t in tags
+                if t.startswith(ID_TAG_PREFIX)
+            ),
             "",
         )
         notes.append(
@@ -79,5 +83,3 @@ def update_note_fields(note_id: int, front: str, back: str) -> None:
         "updateNoteFields",
         note={"id": note_id, "fields": {"Front": front, "Back": back}},
     )
-
-

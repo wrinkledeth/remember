@@ -12,8 +12,12 @@ CARD_B = InsightCard(id="002", front="Front B", back="Back B")
 CARD_C = InsightCard(id="003", front="Front C", back="Back C")
 
 ANKI_NOTE_B = AnkiNote(note_id=100, card_id="002", front="Front B", back="Back B")
-ANKI_NOTE_B_CHANGED = AnkiNote(note_id=100, card_id="002", front="Old front", back="Old back")
-ANKI_NOTE_ORPHAN = AnkiNote(note_id=200, card_id="099", front="Orphan", back="Orphan back")
+ANKI_NOTE_B_CHANGED = AnkiNote(
+    note_id=100, card_id="002", front="Old front", back="Old back"
+)
+ANKI_NOTE_ORPHAN = AnkiNote(
+    note_id=200, card_id="099", front="Orphan", back="Orphan back"
+)
 
 
 def _run_sync(cards, existing_notes=None, **kwargs):
@@ -40,6 +44,7 @@ def _run_sync(cards, existing_notes=None, **kwargs):
 
 # --- all new cards ---
 
+
 def test_all_new_cards():
     result, mocks = _run_sync([CARD_A, CARD_B])
     assert result.created == 2
@@ -57,6 +62,7 @@ def test_new_card_calls_add_note_with_correct_args():
 
 # --- mix of new, changed, unchanged ---
 
+
 def test_mixed_scenario():
     result, mocks = _run_sync([CARD_A, CARD_B], existing_notes=[ANKI_NOTE_B])
     assert result.created == 1
@@ -73,6 +79,7 @@ def test_changed_fields_triggers_update():
 
 # --- orphaned cards ---
 
+
 def test_orphaned_cards():
     result, mocks = _run_sync([CARD_A], existing_notes=[ANKI_NOTE_ORPHAN])
     assert result.orphaned == 1
@@ -80,6 +87,7 @@ def test_orphaned_cards():
 
 
 # --- dry run ---
+
 
 def test_dry_run_no_writes():
     result, mocks = _run_sync([CARD_A, CARD_B], dry_run=True)
@@ -89,12 +97,15 @@ def test_dry_run_no_writes():
 
 
 def test_dry_run_with_changes():
-    result, mocks = _run_sync([CARD_B], existing_notes=[ANKI_NOTE_B_CHANGED], dry_run=True)
+    result, mocks = _run_sync(
+        [CARD_B], existing_notes=[ANKI_NOTE_B_CHANGED], dry_run=True
+    )
     assert result.updated == 1
     mocks["update_note_fields"].assert_not_called()
 
 
 # --- error handling ---
+
 
 def test_add_note_error_collected():
     """One card fails, the other still syncs."""
@@ -122,7 +133,10 @@ def test_update_error_collected():
         patch("remember.sync.find_synced_notes", return_value=[100]),
         patch("remember.sync.get_notes_info", return_value=[ANKI_NOTE_B_CHANGED]),
         patch("remember.sync.add_note"),
-        patch("remember.sync.update_note_fields", side_effect=RuntimeError("network error")),
+        patch(
+            "remember.sync.update_note_fields",
+            side_effect=RuntimeError("network error"),
+        ),
     ):
         result = sync("fake.md")
 
@@ -131,6 +145,7 @@ def test_update_error_collected():
 
 
 # --- empty file ---
+
 
 def test_no_cards_returns_empty_result():
     result, mocks = _run_sync([])

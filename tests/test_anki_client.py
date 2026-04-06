@@ -32,7 +32,11 @@ def test_invoke_success(mock_post):
     assert result == [1, 2, 3]
     mock_post.assert_called_once_with(
         ANKI_CONNECT_URL,
-        json={"action": "findNotes", "version": ANKI_CONNECT_VERSION, "params": {"query": "deck:Test"}},
+        json={
+            "action": "findNotes",
+            "version": ANKI_CONNECT_VERSION,
+            "params": {"query": "deck:Test"},
+        },
         timeout=5,
     )
 
@@ -40,7 +44,9 @@ def test_invoke_success(mock_post):
 @patch("remember.anki_client.requests.post")
 def test_invoke_anki_error(mock_post):
     mock_post.return_value = _mock_response(error="collection is not available")
-    with pytest.raises(RuntimeError, match="AnkiConnect error: collection is not available"):
+    with pytest.raises(
+        RuntimeError, match="AnkiConnect error: collection is not available"
+    ):
         _invoke("findNotes", query="deck:Test")
 
 
@@ -68,16 +74,18 @@ def test_find_synced_notes_query(mock_post):
 
 @patch("remember.anki_client.requests.post")
 def test_get_notes_info_parses_response(mock_post):
-    mock_post.return_value = _mock_response(result=[
-        {
-            "noteId": 100,
-            "tags": ["insight-id::001"],
-            "fields": {
-                "Front": {"value": "Front text"},
-                "Back": {"value": "Back text"},
-            },
-        }
-    ])
+    mock_post.return_value = _mock_response(
+        result=[
+            {
+                "noteId": 100,
+                "tags": ["insight-id::001"],
+                "fields": {
+                    "Front": {"value": "Front text"},
+                    "Back": {"value": "Back text"},
+                },
+            }
+        ]
+    )
     notes = get_notes_info([100])
     assert len(notes) == 1
     assert notes[0] == AnkiNote(
