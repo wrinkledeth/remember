@@ -27,37 +27,51 @@ The filename becomes the deck name.
 ## Card format
 
 ```markdown
-# Life Insights
+# Flashcards
 
-<!-- Section: Relationships -->
+<!-- Section: Web Fundamentals -->
 
-## When she's venting about her day
-and I feel the urge to jump in with solutions
+## What does the HTTP 503 status code mean?
 ---
-Just hold space. She's not asking me to solve it.
-The urge to fix is about my discomfort with her discomfort.
+Service Unavailable. The server is temporarily unable to handle
+the request, usually due to maintenance or overload.
+Unlike 500, it implies the condition is temporary.
 
-## I just got critical feedback and my chest is tight.
+## What does "mise en place" mean?
 ---
-The ego is conflating the work with the self.
-The feedback is about the artifact, not about my worth.
+"Everything in its place." Prep and organize all ingredients
+before you start cooking. Reduces mistakes, speeds up execution,
+and keeps the workflow smooth.
 ```
 
 `##` starts a card. `---` separates front from back. Everything else (comments, prose) is ignored. Fronts and backs can be multiple lines.
 
 IDs are auto-generated on first sync and written back into the file as `<!-- id: xxxxxxxx -->` comments. You never need to manage them.
 
-See [`INSIGHT_FORMAT_SPEC.md`](INSIGHT_FORMAT_SPEC.md) for the full spec.
-
 ## How sync works
 
-The markdown file is the source of truth. Anki is just the delivery mechanism.
+The markdown file is the source of truth. Anki is the delivery mechanism.
 
 | Scenario | Action |
 |---|---|
 | New card in markdown | **Create** in Anki |
 | Card edited in markdown | **Update** in Anki (preserves scheduling) |
 | Card unchanged | **Skip** |
-| Card removed from markdown | **Warn** (never auto-deletes from Anki) |
+| Card edited in both (Anki is newer) | **Conflict** — interactive prompt |
+| Card removed from markdown | **Orphan** — prompts to delete from Anki |
 
-## Good Anki Card Design
+### Conflicts
+
+When a card differs between markdown and Anki *and* the Anki note was modified more recently than the file, `remember` shows a colored diff and asks you to choose:
+
+- **`m`** — keep **m**arkdown version (push to Anki)
+- **`a`** — keep **a**nki version (pull back into markdown file)
+- **`s`** — **s**kip (leave both as-is)
+
+## Good card design
+
+- **One idea per card.** Keep it direct and atomic.
+- **Front = trigger.** A question, scenario, or cue — something you'd encounter in the wild.
+- **Back = answer.** Short, direct. If you're writing a paragraph, you're explaining — not answering.
+- **No orphan backs.** If the back doesn't make sense without reading the front, rewrite the front.
+- **Use your own words.** Cards you write yourself stick better than ones you copy.

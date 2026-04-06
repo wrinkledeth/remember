@@ -40,7 +40,7 @@ def test_front_text():
     card_001 = next(c for c in cards if c.id == "001")
     assert (
         card_001.front
-        == "When she's venting about her day, what am I actually being asked to do?"
+        == "What does the HTTP 503 status code mean?"
     )
 
 
@@ -63,7 +63,7 @@ def test_multi_paragraph_back():
     cards = parse_insights(str(FIXTURE))
     card_002 = next(c for c in cards if c.id == "002")
     assert "\n\n" in card_002.back
-    assert "10% truth" in card_002.back
+    assert "UDP" in card_002.back
 
 
 # --- missing separator ---

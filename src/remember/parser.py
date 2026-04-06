@@ -12,37 +12,44 @@ class InsightCard:
 
 _METADATA_RE = re.compile(r"^<!--\s*id:\s*(\S+?)\s*-->$")
 _SEPARATOR = re.compile(r"^---\s*$")
+_HEADING_RE = re.compile(r"^## (.+)$")
 
 
 def parse_insights(filepath: str) -> list[InsightCard]:
     with open(filepath, encoding="utf-8") as f:
-        content = f.read()
+        all_lines = f.readlines()
+
+    # Find all H2 heading positions
+    headings: list[tuple[int, str]] = []
+    for line_num, line in enumerate(all_lines):
+        m = _HEADING_RE.match(line.rstrip("\n"))
+        if m:
+            headings.append((line_num, m.group(1).strip()))
 
     cards = []
-    # Split on H2 headings; produces [preamble, front1, body1, front2, body2, ...]
-    sections = re.split(r"^## (.+)$", content, flags=re.MULTILINE)
-
-    for i in range(1, len(sections), 2):
-        heading = sections[i].strip()
-        body = sections[i + 1] if i + 1 < len(sections) else ""
-
-        lines = body.split("\n")
+    for idx, (line_num, heading) in enumerate(headings):
+        # Body extends from after the heading to the next heading (or EOF)
+        body_start = line_num + 1
+        body_end = headings[idx + 1][0] if idx + 1 < len(headings) else len(all_lines)
+        body_lines = [l.rstrip("\n") for l in all_lines[body_start:body_end]]
 
         # Find the --- separator
         sep_idx = None
-        for j, line in enumerate(lines):
+        for j, line in enumerate(body_lines):
             if _SEPARATOR.match(line.strip()):
                 sep_idx = j
                 break
 
         if sep_idx is None:
-            warnings.warn(f"Card '{heading}': missing --- separator, skipping")
+            warnings.warn(
+                f"{filepath}:{line_num + 1}: Card '{heading}' is missing --- separator, skipping"
+            )
             continue
 
         # Front = heading + lines before separator (excluding ID comment and blanks)
         card_id = None
         front_lines = [heading]
-        for line in lines[:sep_idx]:
+        for line in body_lines[:sep_idx]:
             stripped = line.strip()
             if not stripped:
                 continue
@@ -55,7 +62,7 @@ def parse_insights(filepath: str) -> list[InsightCard]:
         front = "\n".join(front_lines).strip()
 
         # Back = everything after separator
-        back = "\n".join(lines[sep_idx + 1 :]).strip()
+        back = "\n".join(body_lines[sep_idx + 1 :]).strip()
 
         cards.append(InsightCard(id=card_id, front=front, back=back))
 

@@ -18,18 +18,16 @@ This tool bridges a single markdown file (the source of truth for personal life 
 
 ## Markdown Format
 
-See `INSIGHT_FORMAT_SPEC.md` for the full spec. Summary:
-
 ```markdown
-# Life Insights
+# Flashcards
 
-<!-- Section: Relationships -->
+<!-- Section: Web Fundamentals -->
 
-## When she's venting about her day
+## What does the HTTP 503 status code mean?
 <!-- id: a3f8b2c1 -->
-and I feel the urge to jump in with solutions
 ---
-Just hold space. She's not asking me to solve it.
+Service Unavailable. The server is temporarily unable to handle
+the request, usually due to maintenance or overload.
 
 ## Next card front
 ---
