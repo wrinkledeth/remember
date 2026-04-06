@@ -57,7 +57,7 @@ remember pull All::Tech
 
 ### Status
 
-After cards have been edited / added, check what would change without syncing.
+After cards have been edited / added, check what would change in Anki without syncing.
 
 ```bash
 remember status --verbose
@@ -70,7 +70,7 @@ All::Tech::Anki (all/tech/anki.md): 10 synced
 
 ### Push
 
-Sync markdown cards to Anki. Creates new cards, updates changed ones, preserves scheduling.
+Sync markdown cards to Anki. Creates new cards, updates changed ones, preserves scheduling. Interactively resolve conflicts if they exist.
 
 
 ```bash
